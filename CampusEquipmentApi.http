@@ -1,0 +1,137 @@
+@baseUrl = http://localhost:5050
+@seedId = 1
+@createdId = {{createItem.response.body.$.id}}
+
+### 01 - Read the collection. Expect 200 and three initial seed items.
+GET {{baseUrl}}/equipment
+Accept: application/json
+
+### 02 - Read a seed item. Set seedId from request 01 first. Expect 200.
+GET {{baseUrl}}/equipment/{{seedId}}
+Accept: application/json
+
+### 03 - Create a test item. Expect 201, Location, and a generated id.
+# @name createItem
+POST {{baseUrl}}/equipment
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Student Test Microphone",
+  "category": "Audio",
+  "isAvailable": true
+}
+
+### 04 - Read the created item. Expect 200 and the original field values.
+GET {{baseUrl}}/equipment/{{createdId}}
+Accept: application/json
+
+### 05 - Replace editable fields. Expect 204 and an empty response body.
+PUT {{baseUrl}}/equipment/{{createdId}}
+Content-Type: application/json
+
+{
+  "name": "Student Updated Microphone",
+  "category": "Recording",
+  "isAvailable": false
+}
+
+### 06 - Verify replacement. Expect 200 and updated name/category/false.
+GET {{baseUrl}}/equipment/{{createdId}}
+Accept: application/json
+
+### 07 - Invalid POST: whitespace name. Expect 400 with errors.name.
+POST {{baseUrl}}/equipment
+Content-Type: application/json
+
+{
+  "name": "   ",
+  "category": "Audio",
+  "isAvailable": true
+}
+
+### 08 - Invalid POST: omitted category. Expect 400 with errors.category.
+POST {{baseUrl}}/equipment
+Content-Type: application/json
+
+{
+  "name": "Invalid Item",
+  "isAvailable": true
+}
+
+### 09 - Invalid POST: 101-character name. Expect 400 with errors.name.
+POST {{baseUrl}}/equipment
+Content-Type: application/json
+
+{
+  "name": "12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901",
+  "category": "Audio",
+  "isAvailable": true
+}
+
+### 10 - Invalid PUT: whitespace category. Expect 400 with errors.category.
+PUT {{baseUrl}}/equipment/{{createdId}}
+Content-Type: application/json
+
+{
+  "name": "Must Not Be Saved",
+  "category": "   ",
+  "isAvailable": true
+}
+
+### 11 - Invalid PUT: 51-character category. Expect 400 with errors.category.
+PUT {{baseUrl}}/equipment/{{createdId}}
+Content-Type: application/json
+
+{
+  "name": "Must Not Be Saved",
+  "category": "123456789012345678901234567890123456789012345678901",
+  "isAvailable": true
+}
+
+### 12 - Invalid PUT: null name. Expect 400 with errors.name.
+PUT {{baseUrl}}/equipment/{{createdId}}
+Content-Type: application/json
+
+{
+  "name": null,
+  "category": "Audio",
+  "isAvailable": true
+}
+
+### 13 - Verify invalid writes changed nothing. Expect same values as 06.
+GET {{baseUrl}}/equipment/{{createdId}}
+Accept: application/json
+
+### 14 - Verify count/data before restart. Expect 200 and four items.
+GET {{baseUrl}}/equipment
+Accept: application/json
+
+### PAUSE: inspect SQLite, stop/restart the server, then send request 15.
+
+### 15 - Read after restart. Expect 200 and the saved updated values.
+GET {{baseUrl}}/equipment/{{createdId}}
+Accept: application/json
+
+### 16 - Delete the test item. Expect 204 and an empty body.
+DELETE {{baseUrl}}/equipment/{{createdId}}
+
+### 17 - Read the deleted item. Expect 404.
+GET {{baseUrl}}/equipment/{{createdId}}
+
+### 18 - Update the deleted item with VALID input. Expect 404.
+PUT {{baseUrl}}/equipment/{{createdId}}
+Content-Type: application/json
+
+{
+  "name": "Missing Item",
+  "category": "Audio",
+  "isAvailable": true
+}
+
+### 19 - Delete the item again. Expect 404.
+DELETE {{baseUrl}}/equipment/{{createdId}}
+
+### 20 - Final collection. Expect 200 and only the three seed items.
+GET {{baseUrl}}/equipment
+Accept: application/json
